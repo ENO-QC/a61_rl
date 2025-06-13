@@ -1,0 +1,33 @@
+name: model-supervisé RL
+
+on: [push]
+
+jobs:
+  run:
+    runs-on: [ubuntu-latest]
+     
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: cml_run
+        env:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Your ML workflow goes here
+          pip install -r requirements.txt
+          python 01_prod_regression_ci__tutorial.py
+
+          # Write your CML report
+          echo "## Metriques:" >> report.md
+          cat metrics.txt >> report.md
+
+          # Save report to a new branch
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git fetch origin
+          git checkout -B model-artifacts
+          git add metrics.txt report.md || true
+          git commit -m "Ajout des métriques et du rapport" || echo "Nothing to commit"
+          git push origin model-artifacts --force
