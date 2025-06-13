@@ -1,0 +1,36 @@
+name: model-supervisé RL
+
+on:
+  push:
+    branches: [main]  # or your working branch (e.g. dev, ci-cml)
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Required to switch/create branches
+
+      - name: Install dependencies and run ML script
+        run: |
+          pip install -r requirements.txt
+          python 01_prod_regression_ci__tutorial.py
+          echo "## Metriques:" > report.md
+          cat metrics.txt >> report.md
+
+      - name: Commit model and report to 'model-artifacts' branch
+        env:
+          GIT_COMMITTER_NAME: github-actions
+          GIT_COMMITTER_EMAIL: github-actions@github.com
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git checkout -B model-artifacts  # Create/switch to the branch
+
+          git add metrics.txt report.md *.pkl *.png || true  # add your model/output files
+          git commit -m "Add metrics and model artifacts from CI" || echo "Nothing to commit"
+
+          git push origin model-artifacts --force
